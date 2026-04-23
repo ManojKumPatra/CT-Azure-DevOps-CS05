@@ -71,3 +71,36 @@ stages:
 
                 terraform init -reconfigure
                 terraform apply "$(Pipeline.Workspace)\infra-tfplan\tfplan"
+
+# =========================
+# STAGE 3 – Itsio Apply
+# =========================
+
+- stage: Terraform_Apply_Istio
+  displayName: Terraform Apply (Istio)
+  dependsOn: Terraform_Apply_Infrastructure
+
+  jobs:
+  - deployment: ApplyIstio
+    environment: aks-istio-prod
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: Install Istio via Terraform
+            inputs:
+              azureSubscription: azure-mi-connection
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                $ErrorActionPreference = "Stop"
+
+                cd "$(Build.SourcesDirectory)\infra\istio"
+
+                terraform init -reconfigure
+                terraform validate
+                terraform plan
+                terraform apply -auto-approve
