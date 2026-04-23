@@ -32,7 +32,7 @@ stages:
           terraform plan -out=tfplan
           terraform show tfplan
 
-    # ✅ Publish the plan file
+    # Publish the plan file
     - publish: $(Build.SourcesDirectory)\infra\terraform-backend-bootstrap\tfplan
       artifact: tfplan
 

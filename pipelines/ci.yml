@@ -1,5 +1,0 @@
-trigger:
-- main
-
-steps:
-- script: echo "CI pipeline placeholder"

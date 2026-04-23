@@ -1,0 +1,73 @@
+trigger: none
+
+pool:
+  name: Default   # your self-hosted agent
+
+stages:
+
+# =========================
+# STAGE 1 – Terraform Plan
+# =========================
+
+- stage: Terraform_Plan_Infrastructure
+  displayName: Terraform Plan (AKS & ACR)
+
+  jobs:
+  - job: Plan
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Terraform Plan (Infra)
+      inputs:
+        azureSubscription: azure-mi-connection
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Stop"
+
+          cd "$(Build.SourcesDirectory)\infra\terraform"
+
+          terraform init -reconfigure
+          terraform validate
+          terraform plan -out=tfplan
+          terraform show tfplan
+
+    - publish: "$(Build.SourcesDirectory)\infra\terraform\tfplan"
+      artifact: infra-tfplan
+
+# =========================
+# STAGE 2 – Terraform Apply
+# =========================
+
+- stage: Terraform_Apply_Infrastructure
+  displayName: Terraform Apply (AKS & ACR)
+  dependsOn: Terraform_Plan_Infrastructure
+
+  jobs:
+  - deployment: ApplyInfra
+    displayName: Apply AKS Infrastructure
+    environment: aks-infra-prod   # approval gate here
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - download: current
+            artifact: infra-tfplan
+
+          - task: AzureCLI@2
+            displayName: Terraform Apply (Infra)
+            inputs:
+              azureSubscription: azure-mi-connection
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                $ErrorActionPreference = "Stop"
+
+                cd "$(Build.SourcesDirectory)\infra\terraform"
+
+                terraform init -reconfigure
+                terraform apply "$(Pipeline.Workspace)\infra-tfplan\tfplan"
