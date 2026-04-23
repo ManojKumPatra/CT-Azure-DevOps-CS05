@@ -12,7 +12,7 @@ stages:
 # STAGE 1 – BOOTSTRAP BACKEND - Terraform Plan
 # =============================================
 - stage: Terraform_Plan
-  displayName: Terraform Plan
+  displayName: Terraform Plan (Bootstrap Backend)
   jobs:
   - job: Plan
     steps:
@@ -27,29 +27,39 @@ stages:
         inlineScript: |
           $ErrorActionPreference = "Stop"
 
-          cd "$(Build.SourcesDirectory)\infra\terraform"
+          $bootstrapDir = "$(Build.SourcesDirectory)\infra\terraform-backend-bootstrap"
+          cd $bootstrapDir
 
-          terraform init
+          terraform init -reconfigure
           terraform validate
           terraform plan -out=tfplan
-
           terraform show tfplan
+
+    # ✅ Publish the plan file
+    - publish: $(Build.SourcesDirectory)\infra\terraform-backend-bootstrap\tfplan
+      artifact: tfplan
+
 
 # =============================================================
 # STAGE 2 – BOOTSTRAP BACKEND - Terraform APPLY (with approval)
 # =============================================================
 
 - stage: Terraform_Apply
-  displayName: Terraform Apply
+  displayName: Terraform Apply (Bootstrap Backend)
   dependsOn: Terraform_Plan
   jobs:
   - deployment: Apply
-    environment: terraform-backend-prod   # 👈 approval goes here
+    displayName: Apply Backend Terraform
+    environment: terraform-backend-prod   # ✅ approval gate here
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: self
+
+          # ✅ Download the plan artifact
+          - download: current
+            artifact: tfplan
 
           - task: AzureCLI@2
             displayName: Terraform Apply
@@ -60,7 +70,8 @@ stages:
               inlineScript: |
                 $ErrorActionPreference = "Stop"
 
-                cd "$(Build.SourcesDirectory)\infra\terraform"
+                $bootstrapDir = "$(Build.SourcesDirectory)\infra\terraform-backend-bootstrap"
+                cd $bootstrapDir
 
-                terraform init
-                terraform apply tfplan
+                terraform init -reconfigure
+                terraform apply "$(Pipeline.Workspace)\tfplan\tfplan"
