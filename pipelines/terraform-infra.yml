@@ -33,7 +33,7 @@ stages:
           terraform plan -out=tfplan
           terraform show tfplan
 
-    - publish: "$(Build.SourcesDirectory)\infra\terraform\tfplan"
+    - publish: $(Build.SourcesDirectory)\infra\terraform\tfplan
       artifact: infra-tfplan
 
 # =========================
