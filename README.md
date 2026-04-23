@@ -1,20 +1,19 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# AKS mTLS Case Study using Istio
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## Objective
+Demonstrate mutual TLS (mTLS) communication between two Kubernetes services
+using Istio service mesh on Azure Kubernetes Service (AKS).
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Key Concepts
+- Service Mesh (Istio)
+- Mutual TLS (mTLS)
+- Zero Trust Networking
+- Infrastructure as Code (Terraform)
+- CI/CD using Azure DevOps
+- Helm-based Kubernetes deployments
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Architecture
+Service A → Service B (mTLS enforced by Istio sidecars)
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+## Verification
+mTLS is verified using `tcpdump` on Envoy sidecar proxies.

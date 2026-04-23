@@ -1,0 +1,66 @@
+trigger: none
+
+pool:
+  name: Default   # your self-hosted agent
+
+variables:
+  terraformVersion: '1.6.6'
+
+stages:
+
+# =============================================
+# STAGE 1 – BOOTSTRAP BACKEND - Terraform Plan
+# =============================================
+- stage: Terraform_Plan
+  displayName: Terraform Plan
+  jobs:
+  - job: Plan
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Terraform Plan
+      inputs:
+        azureSubscription: azure-mi-connection
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Stop"
+
+          cd "$(Build.SourcesDirectory)\infra\terraform"
+
+          terraform init
+          terraform validate
+          terraform plan -out=tfplan
+
+          terraform show tfplan
+
+# =============================================================
+# STAGE 2 – BOOTSTRAP BACKEND - Terraform APPLY (with approval)
+# =============================================================
+
+- stage: Terraform_Apply
+  displayName: Terraform Apply
+  dependsOn: Terraform_Plan
+  jobs:
+  - deployment: Apply
+    environment: terraform-backend-prod   # 👈 approval goes here
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: Terraform Apply
+            inputs:
+              azureSubscription: azure-mi-connection
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                $ErrorActionPreference = "Stop"
+
+                cd "$(Build.SourcesDirectory)\infra\terraform"
+
+                terraform init
+                terraform apply tfplan
