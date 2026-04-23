@@ -3,9 +3,6 @@ trigger: none
 pool:
   name: Default   # your self-hosted agent
 
-variables:
-  terraformVersion: '1.6.6'
-
 stages:
 
 # =============================================
