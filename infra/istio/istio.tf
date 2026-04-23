@@ -12,5 +12,12 @@ resource "helm_release" "istiod" {
   chart      = "istiod"
   namespace  = "istio-system"
 
-  depends_on = [helm_release.istio_base]
+  depends_on = [
+    helm_release.istio_base
+  ]
+
+  set {
+    name  = "meshConfig.enableAutoMtls"
+    value = "true"
+  }
 }
