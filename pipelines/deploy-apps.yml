@@ -43,5 +43,11 @@ stages:
           Write-Host "Deploying service A..."
           kubectl apply -f "$(Build.SourcesDirectory)\k8s\service-a.yaml"
 
+          
+          Write-Host "Restarting deployments to pick up ServiceAccounts..."
+          kubectl rollout restart deployment service-a -n prod
+          kubectl rollout restart deployment service-b -n prod
+
+
           Write-Host "Verifying pods..."
           kubectl get pods -n prod
