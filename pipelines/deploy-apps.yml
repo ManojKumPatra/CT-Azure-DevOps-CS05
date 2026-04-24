@@ -1,7 +1,7 @@
 trigger: none
 
 pool:
-  name: Default   # your self-hosted agent
+  name: Default   # self-hosted agent
 
 variables:
   aksResourceGroup: rg-aks-mtls
@@ -27,11 +27,7 @@ stages:
           $kubeconfig = "$(Agent.TempDirectory)\kubeconfig"
           $env:KUBECONFIG = $kubeconfig
 
-          az aks get-credentials `
-            --resource-group $(aksResourceGroup) `
-            --name $(aksClusterName) `
-            --file $kubeconfig `
-            --overwrite-existing
+          az aks get-credentials --resource-group $(aksResourceGroup) --name $(aksClusterName) --file $kubeconfig --overwrite-existing
 
           Write-Host "Applying namespace..."
           kubectl apply -f "$(Build.SourcesDirectory)\k8s\namespace.yaml"
