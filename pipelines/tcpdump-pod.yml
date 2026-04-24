@@ -37,6 +37,8 @@ stages:
           Write-Host "Waiting for debugger pod to be ready..."
           kubectl wait --for=condition=Ready pod/tls-debugger -n prod --timeout=120s
 
+          kubectl get pods -n prod
+
           Write-Host "Starting tcpdump (background)..."
           kubectl exec -n prod tls-debugger -- timeout 10 tcpdump -i eth0 -A port 80 > $(Agent.TempDirectory)\tcpdump.log
 
@@ -47,4 +49,4 @@ stages:
           Get-Content "$(Agent.TempDirectory)\tcpdump.log"
 
           Write-Host "Cleaning up debug pod..."
-          kubectl delete pod tls-sniffer -n prod
+          kubectl delete pod tls-debugger -n prod
