@@ -32,6 +32,11 @@ stages:
           Write-Host "Applying namespace..."
           kubectl apply -f "$(Build.SourcesDirectory)\k8s\namespace.yaml"
 
+          
+          Write-Host "Applying ServiceAccounts..."
+          kubectl apply -f "$(Build.SourcesDirectory)\k8s\serviceaccounts.yaml"
+
+
           Write-Host "Deploying service B..."
           kubectl apply -f "$(Build.SourcesDirectory)\k8s\service-b.yaml"
 
