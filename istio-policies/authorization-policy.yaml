@@ -2,6 +2,7 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: allow-service-a
+  namespace: prod
 spec:
   selector:
     matchLabels:
@@ -10,4 +11,4 @@ spec:
   - from:
     - source:
         principals:
-        - cluster.local/ns/dev/sa/service-a
+        - cluster.local/ns/prod/sa/service-a

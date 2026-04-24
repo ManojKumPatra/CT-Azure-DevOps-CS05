@@ -1,0 +1,38 @@
+trigger: none
+
+pool:
+  name: Default   # self-hosted agent
+
+variables:
+  aksResourceGroup: rg-aks-mtls
+  aksClusterName: aks-mtls-001
+
+stages:
+- stage: Apply_Istio_Policies
+  displayName: Apply Istio mTLS & Authorization
+  jobs:
+  - job: ApplyPolicies
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Apply Istio Policies
+      inputs:
+        azureSubscription: azure-mi-connection
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Stop"
+
+          $kubeconfig = "$(Agent.TempDirectory)\kubeconfig"
+          $env:KUBECONFIG = $kubeconfig
+
+          az aks get-credentials --resource-group $(aksResourceGroup) --name $(aksClusterName) --file $kubeconfig --overwrite-existing
+
+          Write-Host "Applying STRICT mTLS..."
+          kubectl apply -f "$(Build.SourcesDirectory)\istio-policies\peer-authentication.yaml"
+
+          Write-Host "Applying AuthorizationPolicy..."
+          kubectl apply -f "$(Build.SourcesDirectory)\istio-policies\authorization-policy.yaml"
+
+          Write-Host "Policies applied successfully"
