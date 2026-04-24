@@ -1,0 +1,46 @@
+trigger: none
+
+pool:
+  name: Default   # your self-hosted agent
+
+variables:
+  aksResourceGroup: rg-aks-mtls
+  aksClusterName: aks-mtls-001
+
+stages:
+- stage: Deploy_Apps
+  displayName: Deploy Apps to AKS
+  jobs:
+  - job: Deploy
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Apply Kubernetes Manifests
+      inputs:
+        azureSubscription: azure-mi-connection
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Stop"
+
+          $kubeconfig = "$(Agent.TempDirectory)\kubeconfig"
+          $env:KUBECONFIG = $kubeconfig
+
+          az aks get-credentials `
+            --resource-group $(aksResourceGroup) `
+            --name $(aksClusterName) `
+            --file $kubeconfig `
+            --overwrite-existing
+
+          Write-Host "Applying namespace..."
+          kubectl apply -f "$(Build.SourcesDirectory)\k8s\namespace.yaml"
+
+          Write-Host "Deploying service B..."
+          kubectl apply -f "$(Build.SourcesDirectory)\k8s\service-b.yaml"
+
+          Write-Host "Deploying service A..."
+          kubectl apply -f "$(Build.SourcesDirectory)\k8s\service-a.yaml"
+
+          Write-Host "Verifying pods..."
+          kubectl get pods -n prod
