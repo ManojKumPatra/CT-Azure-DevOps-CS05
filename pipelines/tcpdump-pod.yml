@@ -1,0 +1,50 @@
+trigger: none
+
+pool:
+  name: Default  # your self-hosted agent
+
+variables:
+  aksResourceGroup: rg-aks-mtls
+  aksClusterName: aks-mtls-001
+
+stages:
+- stage: Istio_mTLS_debugger
+  displayName: Istio mTLS tcpdump Proof
+  jobs:
+  - job: Sniff
+    displayName: Capture mTLS traffic
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: Run tcpdump for mTLS proof
+      inputs:
+        azureSubscription: azure-mi-connection
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $ErrorActionPreference = "Stop"
+
+          $kubeconfig = "$(Agent.TempDirectory)\kubeconfig"
+          $env:KUBECONFIG = $kubeconfig
+
+          Write-Host "Getting AKS credentials..."
+          az aks get-credentials --resource-group $(aksResourceGroup) --name $(aksClusterName) --file $kubeconfig --overwrite-existing
+
+          Write-Host "Applying tcpdump debug pod..."
+          kubectl apply -f "$(Build.SourcesDirectory)\k8s\tls-debugger.yaml"
+
+          Write-Host "Waiting for debugger pod to be ready..."
+          kubectl wait --for=condition=Ready pod/tls-debugger -n prod --timeout=120s
+
+          Write-Host "Starting tcpdump (background)..."
+          kubectl exec -n prod tls-debugger -- timeout 10 tcpdump -i eth0 -A port 80 > $(Agent.TempDirectory)\tcpdump.log
+
+          Write-Host "Triggering encrypted request (service-a -> service-b)..."
+          kubectl exec -n prod deploy/service-a -c app -- curl http://service-b
+
+          Write-Host "---- TCPDUMP OUTPUT (mTLS proof) ----"
+          Get-Content "$(Agent.TempDirectory)\tcpdump.log"
+
+          Write-Host "Cleaning up debug pod..."
+          kubectl delete pod tls-sniffer -n prod
